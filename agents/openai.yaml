@@ -1,0 +1,4 @@
+interface:
+  display_name: "vLLM Ascend Models"
+  short_description: "vLLM Ascend model inference recipes"
+  default_prompt: "Use $vllm-ascend-models to create the correct vLLM Ascend inference command for DeepSeek-V4-Flash on a single node."
