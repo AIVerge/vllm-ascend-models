@@ -23,6 +23,7 @@ Source seed URL: https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models
 | Qwen3.5-Dense (2B/4B/9B) | `references/models/qwen3-5-dense-2b-4b-9b.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/Qwen3.5-Dense.html | 12 | 3 | 2 |
 | Qwen3.5-397B-A17B | `references/models/qwen3-5-397b-a17b.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/Qwen3.5-397B-A17B.html | 12 | 6 | 1 |
 | Qwen3.6-35B-A3B | `references/models/qwen3-6-35b-a3b.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/Qwen3.6-35B-A3B.html | 8 | 2 | 1 |
+| Qwen3.8-27B | `references/models/qwen3-8-27b.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/Qwen3.8-27B.html | 10 | 4 | 2 |
 | DeepSeek-V3.1 | `references/models/deepseek-v3-1.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/DeepSeek-V3.1.html | 18 | 7 | 4 |
 | DeepSeek-V3.2 | `references/models/deepseek-v3-2.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/DeepSeek-V3.2.html | 16 | 9 | 1 |
 | DeepSeek-V4-Flash | `references/models/deepseek-v4-flash.md` | https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/DeepSeek-V4-Flash.html | 20 | 10 | 2 |
