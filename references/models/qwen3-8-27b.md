@@ -6,8 +6,8 @@ Use these snippets as the authoritative starting point for this model. Replace o
 
 ## Quick Facts
 
-- Extracted snippets: 8
-- `vllm serve` snippets: 2
+- Extracted snippets: 10
+- `vllm serve` snippets: 4
 - API or client verification snippets: 2
 
 ## Snippets
@@ -216,3 +216,89 @@ curl http://localhost:8000/v1/chat/completions \
     }
 }
 ```
+
+### 9. Tuned Single-Node Deployment — 2 NPU (recommended)
+
+Operator-tuned parameter set for Qwen3.8-27B (w8a8) on Ascend 910B. **2 NPU cards are sufficient** (`--tensor-parallel-size 2`); the parameters below are raised for long context (256K) and higher throughput compared to the stock tutorial snippet (snippet 4). Includes the performance-critical flags that must not be dropped: `--enable-prefix-caching`, `--speculative-config` (qwen3_5_mtp), `--compilation-config` (FULL_DECODE_ONLY), `--additional-config` (cpu binding), plus tool calling and Qwen3 thinking-mode parsing.
+
+```bash
+#!/bin/sh
+# Load model from ModelScope to speed up download
+export VLLM_USE_MODELSCOPE=True
+# To reduce memory fragmentation and avoid out of memory
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+# Size of the shared buffer (in MB) used by HCCL for NPU-to-NPU collective communication
+export HCCL_BUFFSIZE=512
+# Whether OpenMP threads are bound to specific CPU cores
+export OMP_PROC_BIND=false
+# Number of OpenMP threads available for parallel regions
+export OMP_NUM_THREADS=1
+
+# Model weight path; can be a ModelScope model id (e.g., Eco-Tech/Qwen3.8-27B-w8a8) or a local directory path
+export MODEL_PATH=Eco-Tech/Qwen3.8-27B-w8a8
+
+vllm serve $MODEL_PATH \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --data-parallel-size 1 \
+    --tensor-parallel-size 2 \
+    --served-model-name qwen3.8 \
+    --max-model-len 262144 \
+    --max-num-batched-tokens 32768 \
+    --max-num-seqs 16 \
+    --gpu-memory-utilization 0.90 \
+    --trust-remote-code \
+    --enable-prefix-caching \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_coder \
+    --reasoning-parser qwen3 \
+    --speculative-config '{"method": "qwen3_5_mtp", "num_speculative_tokens": 3, "enforce_eager": true}' \
+    --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \
+    --additional-config '{"enable_cpu_binding":true}'
+```
+
+### 10. Tuned Single-Node Deployment — 4 NPU (verified in production)
+
+Same tuned parameter set scaled to `--tensor-parallel-size 4`, as verified in the production deployment (Ascend 910B, 4 NPU). Use this variant only when extra KV-cache/context headroom is required; **2 NPU cards are enough for the default 256K-context service**.
+
+```bash
+#!/bin/sh
+# Load model from ModelScope to speed up download
+export VLLM_USE_MODELSCOPE=True
+# To reduce memory fragmentation and avoid out of memory
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+# Size of the shared buffer (in MB) used by HCCL for NPU-to-NPU collective communication
+export HCCL_BUFFSIZE=512
+# Whether OpenMP threads are bound to specific CPU cores
+export OMP_PROC_BIND=false
+# Number of OpenMP threads available for parallel regions
+export OMP_NUM_THREADS=1
+
+# Model weight path; can be a ModelScope model id (e.g., Eco-Tech/Qwen3.8-27B-w8a8) or a local directory path
+export MODEL_PATH=Eco-Tech/Qwen3.8-27B-w8a8
+
+vllm serve $MODEL_PATH \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --data-parallel-size 1 \
+    --tensor-parallel-size 4 \
+    --served-model-name qwen3.8 \
+    --max-model-len 262144 \
+    --max-num-batched-tokens 32768 \
+    --max-num-seqs 16 \
+    --gpu-memory-utilization 0.90 \
+    --trust-remote-code \
+    --enable-prefix-caching \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_coder \
+    --reasoning-parser qwen3 \
+    --speculative-config '{"method": "qwen3_5_mtp", "num_speculative_tokens": 3, "enforce_eager": true}' \
+    --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \
+    --additional-config '{"enable_cpu_binding":true}'
+```
+
+## Tuned Deployment Notes
+
+- The tuned snippets (9, 10) mirror the production GPUStack deployment parameters for `qwen3.8-27b-2npu` (vLLM Ascend v0.22.1rc1-custom): raised `--max-model-len 262144`, `--max-num-batched-tokens 32768`, `--max-num-seqs 16`, `--gpu-memory-utilization 0.90`, plus tool calling (`--enable-auto-tool-choice`, `--tool-call-parser qwen3_coder`) and Qwen3 thinking-mode parsing (`--reasoning-parser qwen3`).
+- Do not drop the performance flags: `--enable-prefix-caching`, `--speculative-config '{"method": "qwen3_5_mtp", ...}'`, `--compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}'`, `--additional-config '{"enable_cpu_binding":true}'`, and the env vars `PYTORCH_NPU_ALLOC_CONF=expandable_segments:True`, `HCCL_BUFFSIZE=512`, `OMP_PROC_BIND=false`, `OMP_NUM_THREADS=1`.
+- GPUStack injects `--enable-prompt-tokens-details`, `--served-model-name=<model>`, `--host`/`--port` automatically; served model name on the managed instance is `qwen3.8-27b-2npu`.
